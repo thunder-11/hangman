@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Decode or Die! - Hangman Game</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+                'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 50%, #7e22ce 100%);
+            min-height: 100vh;
+            padding: 2rem;
+        }
+
+        .container {
+            max-width: 1024px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            font-size: 3rem;
+            font-weight: bold;
+            color: white;
+            text-align: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .subtitle {
+            color: #bfdbfe;
+            font-size: 1.125rem;
+            text-align: center;
+        }
+
+        .level-display {
+            margin-top: 1rem;
+            background: linear-gradient(90deg, #eab308 0%, #f97316 100%);
+            border-radius: 0.5rem;
+            padding: 1rem;
+            display: inline-block;
+            color: white;
+            margin-left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .level-text {
+            font-size: 0.875rem;
+            font-weight: 600;
+        }
+
+        .progress-bar {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+
+        .progress-container {
+            background-color: rgba(255,255,255,0.3);
+            border-radius: 9999px;
+            height: 0.75rem;
+            flex: 1;
+            overflow: hidden;
+            min-width: 150px;
+        }
+
+        .progress-fill {
+            background-color: white;
+            height: 100%;
+            transition: width 0.5s;
+        }
+
+        .stats-bar {
+            display: flex;
+            justify-content: center;
+            gap: 1.5rem;
+            margin-top: 1rem;
+            color: white;
+            flex-wrap: wrap;
+        }
+
+        .stat-item {
+            background-color: rgba(255,255,255,0.2);
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+        }
+
+        .main-game {
+            background-color: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 1.5rem;
+            padding: 2rem;
+            margin-top: 2rem;
+            box-shadow: 0 20px 25px rgba(0,0,0,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .hangman-section {
+            background-color: rgba(255,255,255,0.9);
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        svg {
+            margin: 0 auto;
+            display: block;
+        }
+
+        .wrong-guesses-text {
+            text-align: center;
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: #374151;
+            margin-top: 1rem;
+        }
+
+        .lives-indicator {
+            display: flex;
+            justify-content: center;
+            gap: 0.25rem;
+            margin-top: 0.5rem;
+        }
+
+        .life-dot {
+            width: 0.75rem;
+            height: 0.75rem;
+            border-radius: 9999px;
+        }
+
+        .word-display-section {
+            background: linear-gradient(90deg, #a855f7 0%, #ec4899 100%);
+            border-radius: 0.75rem;
+            padding: 2rem;
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+
+        .word-display {
+            font-size: 2.25rem;
+            font-family: monospace;
+            font-weight: bold;
+            color: white;
+            letter-spacing: 0.15em;
+        }
+
+        .hint-section {
+            margin-top: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            align-items: center;
+        }
+
+        button {
+            padding: 0.5rem 1.5rem;
+            border-radius: 0.5rem;
+            font-weight: bold;
+            border: none;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.2s;
+        }
+
+        button:hover:not(:disabled) {
+            transform: scale(1.05);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .hint-button {
+            background-color: #facc15;
+            color: #581c87;
+        }
+
+        .reveal-button {
+            background-color: #4ade80;
+            color: #581c87;
+        }
+
+        .hint-display {
+            background-color: rgba(255,255,255,0.2);
+            border-radius: 0.5rem;
+            padding: 1rem;
+            color: white;
+            width: 100%;
+        }
+
+        .hint-label {
+            color: #fcd34d;
+            font-weight: bold;
+            font-size: 0.875rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .hint-text {
+            font-size: 1.125rem;
+        }
+
+        .game-status {
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            text-align: center;
+            display: none;
+        }
+
+        .game-status.show {
+            display: block;
+        }
+
+        .game-status.won {
+            background-color: rgba(34, 197, 94, 0.2);
+            border: 2px solid #4ade80;
+        }
+
+        .game-status.lost {
+            background-color: rgba(239, 68, 68, 0.2);
+            border: 2px solid #f87171;
+        }
+
+        .status-title {
+            font-size: 1.875rem;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }
+
+        .status-title.won {
+            color: #4ade80;
+        }
+
+        .status-title.lost {
+            color: #f87171;
+        }
+
+        .word-reveal {
+            color: white;
+            font-size: 1.25rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .points-info {
+            color: #fcd34d;
+            font-size: 1.125rem;
+            font-weight: bold;
+            margin-bottom: 1rem;
+        }
+
+        .hint-info {
+            color: #93c5fd;
+            margin-bottom: 1rem;
+        }
+
+        .next-button {
+            background: linear-gradient(90deg, #22c55e 0%, #3b82f6 100%);
+            color: white;
+            padding: 1rem 2rem;
+            font-size: 1.125rem;
+            box-shadow: 0 10px 15px rgba(0,0,0,0.1);
+        }
+
+        .keyboard {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .key-button {
+            height: 3rem;
+            font-weight: bold;
+            font-size: 1.125rem;
+            font-family: inherit;
+        }
+
+        .key-button.correct {
+            background-color: #22c55e;
+            color: white;
+        }
+
+        .key-button.wrong {
+            background-color: #ef4444;
+            color: white;
+        }
+
+        .key-button.available {
+            background-color: rgba(255,255,255,0.9);
+            color: #581c87;
+        }
+
+        .info-panel {
+            background-color: rgba(255,255,255,0.1);
+            border-radius: 0.5rem;
+            padding: 1rem;
+            color: white;
+        }
+
+        .info-title {
+            font-weight: bold;
+            font-size: 1.125rem;
+            margin-bottom: 0.5rem;
+            color: #fcd34d;
+        }
+
+        .info-list {
+            font-size: 0.875rem;
+            color: #dbeafe;
+            padding-left: 1rem;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 1.5rem;
+            color: rgba(255,255,255,0.7);
+            font-size: 0.875rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>DECODE OR DIE!</h1>
+        <p class="subtitle">Advanced Hangman System</p>
+        
+        <div class="level-display">
+            <p class="level-text">LEVEL <span id="currentLevel">1</span> - <span id="levelName">BEGINNER</span></p>
+            <div class="progress-bar">
+                <div class="progress-container">
+                    <div class="progress-fill" id="progressBar"></div>
+                </div>
+                <p><span id="scoreDisplay">0 / 200</span></p>
+            </div>
+        </div>
+
+        <div class="stats-bar">
+            <div class="stat-item">Score: <span id="scoreValue">0</span></div>
+            <div class="stat-item">Games: <span id="gamesValue">0</span></div>
+            <div class="stat-item">Lives: <span id="livesValue">8</span></div>
+            <div class="stat-item">Category: <span id="categoryValue">-</span></div>
+        </div>
+
+        <div class="main-game">
+            <div class="hangman-section">
+                <svg width="200" height="250" id="hangman">
+                    <line x1="20" y1="230" x2="180" y2="230" stroke="#8B4513" stroke-width="4" />
+                    <line x1="50" y1="230" x2="50" y2="20" stroke="#8B4513" stroke-width="4" />
+                    <line x1="50" y1="20" x2="130" y2="20" stroke="#8B4513" stroke-width="4" />
+                    <line x1="130" y1="20" x2="130" y2="50" stroke="#8B4513" stroke-width="4" />
+                </svg>
+                <div class="wrong-guesses-text">
+                    Wrong Guesses: <span id="wrongGuessCount">0</span> / <span id="maxLives">8</span>
+                </div>
+                <div class="lives-indicator" id="livesIndicator"></div>
+            </div>
+
+            <div class="word-display-section">
+                <p class="word-display" id="wordDisplay">_ _ _ _ _ _</p>
+                
+                <div class="hint-section">
+                    <button class="hint-button" id="hintButton" onclick="game.revealHint()">💡 Show Hint (-5 points)</button>
+                    <div class="hint-display" id="hintDisplay" style="display: none;">
+                        <p class="hint-label">HINT:</p>
+                        <p class="hint-text" id="hintText"></p>
+                    </div>
+                    <button class="reveal-button" id="revealButton" onclick="game.revealLetter()">🎁 Reveal Letter (Free)</button>
+                </div>
+            </div>
+
+            <div class="game-status" id="gameStatus">
+                <h2 class="status-title" id="statusTitle"></h2>
+                <p class="word-reveal">The word was: <strong id="revealedWord"></strong></p>
+                <p class="points-info" id="pointsInfo"></p>
+                <p class="hint-info">Hint: <span id="statusHint"></span></p>
+                <button class="next-button" id="nextButton" onclick="game.startNewGame()"></button>
+            </div>
+
+            <div class="keyboard" id="keyboard"></div>
+
+            <div class="info-panel">
+                <h3 class="info-title">📝 Game Info:</h3>
+                <ul class="info-list">
+                    <li>Click letters to guess the hidden word</li>
+                    <li>Use hints to get clues (-5 points)</li>
+                    <li>Reveal random correct letters for free</li>
+                    <li>Progress through 10 levels with increasing difficulty</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>💻 Decode or Die! - 10 Level Progressive Hangman System</p>
+        </div>
+    </div>
+
+    <script>
+        const game = {
+            wordCategories: {
+                'Technology': [
+                    { word: 'COMPUTER', hint: 'Electronic device for processing data' },
+                    { word: 'GRAPHICS', hint: 'Visual images or designs' },
+                    { word: 'KEYBOARD', hint: 'Input device with keys' },
+                    { word: 'ALGORITHM', hint: 'Step-by-step problem-solving procedure' },
+                    { word: 'DATABASE', hint: 'Organized collection of data' }
+                ],
+                'Animals': [
+                    { word: 'ELEPHANT', hint: 'Largest land mammal' },
+                    { word: 'PENGUIN', hint: 'Flightless bird that swims' },
+                    { word: 'DOLPHIN', hint: 'Intelligent marine mammal' },
+                    { word: 'BUTTERFLY', hint: 'Insect with colorful wings' },
+                    { word: 'KANGAROO', hint: 'Australian hopping marsupial' }
+                ],
+                'Countries': [
+                    { word: 'AUSTRALIA', hint: 'Land down under' },
+                    { word: 'CANADA', hint: 'Home of maple syrup' },
+                    { word: 'EGYPT', hint: 'Land of pyramids' },
+                    { word: 'BRAZIL', hint: 'Largest South American country' },
+                    { word: 'JAPAN', hint: 'Land of the rising sun' }
+                ]
+            },
+
+            levelRequirements: {
+                1: { name: 'Beginner', scoreNeeded: 0, lives: 8 },
+                2: { name: 'Novice', scoreNeeded: 200, lives: 7 },
+                3: { name: 'Apprentice', scoreNeeded: 500, lives: 6 },
+                4: { name: 'Skilled', scoreNeeded: 900, lives: 6 },
+                5: { name: 'Expert', scoreNeeded: 1400, lives: 5 },
+                6: { name: 'Master', scoreNeeded: 2000, lives: 5 },
+                7: { name: 'Grandmaster', scoreNeeded: 2700, lives: 4 },
+                8: { name: 'Legend', scoreNeeded: 3500, lives: 4 },
+                9: { name: 'Mythic', scoreNeeded: 4500, lives: 3 },
+                10: { name: 'Divine', scoreNeeded: 6000, lives: 3 }
+            },
+
+            word: '',
+            hint: '',
+            category: '',
+            guessedLetters: new Set(),
+            wrongGuesses: 0,
+            gameStatus: 'playing',
+            hintsUsed: 0,
+            hintRevealed: false,
+            score: 0,
+            gamesPlayed: 0,
+            currentLevel: 1,
+            usedWords: new Set(),
+
+            getLevelRequirements(level) {
+                return this.levelRequirements[Math.min(level, 10)];
+            },
+
+            getNextLevelScore() {
+                if (this.currentLevel >= 10) return null;
+                return this.levelRequirements[this.currentLevel + 1].scoreNeeded;
+            },
+
+            startNewGame() {
+                const categories = Object.keys(this.wordCategories);
+                const randomCategory = categories[Math.floor(Math.random() * categories.length)];
+                const categoryWords = this.wordCategories[randomCategory];
+                
+                const availableWords = categoryWords.filter(w => !this.usedWords.has(w.word));
+                
+                let selectedWord;
+                if (availableWords.length === 0) {
+                    this.usedWords = new Set();
+                    selectedWord = categoryWords[Math.floor(Math.random() * categoryWords.length)];
+                } else {
+                    selectedWord = availableWords[Math.floor(Math.random() * availableWords.length)];
+                }
+                
+                this.word = selectedWord.word;
+                this.hint = selectedWord.hint;
+                this.category = randomCategory;
+                this.guessedLetters = new Set();
+                this.wrongGuesses = 0;
+                this.gameStatus = 'playing';
+                this.hintRevealed = false;
+                this.hintsUsed = 0;
+                this.usedWords.add(selectedWord.word);
+                
+                this.render();
+            },
+
+            revealHint() {
+                if (!this.hintRevealed && this.gameStatus === 'playing') {
+                    this.hintRevealed = true;
+                    this.hintsUsed++;
+                    this.render();
+                }
+            },
+
+            revealLetter() {
+                if (this.gameStatus !== 'playing') return;
+                
+                const unguessedLetters = this.word.split('').filter(letter => !this.guessedLetters.has(letter));
+                if (unguessedLetters.length > 0) {
+                    const randomLetter = unguessedLetters[Math.floor(Math.random() * unguessedLetters.length)];
+                    this.handleLetterClick(randomLetter, true);
+                }
+            },
+
+            handleLetterClick(letter, isFreeReveal) {
+                isFreeReveal = isFreeReveal || false;
+                if (this.gameStatus !== 'playing' || this.guessedLetters.has(letter)) return;
+
+                this.guessedLetters.add(letter);
+
+                const levelInfo = this.getLevelRequirements(this.currentLevel);
+                const maxLives = levelInfo.lives;
+
+                if (!this.word.includes(letter) && !isFreeReveal) {
+                    this.wrongGuesses++;
+                    
+                    if (this.wrongGuesses >= maxLives) {
+                        this.gameStatus = 'lost';
+                        this.gamesPlayed++;
+                    }
+                } else {
+                    const allLettersGuessed = this.word.split('').every(l => this.guessedLetters.has(l));
+                    if (allLettersGuessed) {
+                        this.gameStatus = 'won';
+                        const bonusPoints = (maxLives - this.wrongGuesses) * 10;
+                        const hintPenalty = this.hintsUsed * 5;
+                        const levelBonus = this.currentLevel * 20;
+                        const finalScore = Math.max(0, 100 + bonusPoints + levelBonus - hintPenalty);
+                        this.score += finalScore;
+                        this.gamesPlayed++;
+
+                        const nextLevelScore = this.getNextLevelScore();
+                        if (nextLevelScore && this.score >= nextLevelScore && this.currentLevel < 10) {
+                            this.currentLevel++;
+                        }
+                    }
+                }
+
+                this.render();
+            },
+
+            getDisplayWord() {
+                return this.word.split('').map(letter => 
+                    this.guessedLetters.has(letter) ? letter : '_'
+                ).join(' ');
+            },
+
+            drawHangman() {
+                const levelInfo = this.getLevelRequirements(this.currentLevel);
+                const maxLives = levelInfo.lives;
+                const wrongGuessesForDisplay = Math.floor((this.wrongGuesses / maxLives) * 6);
+                
+                const svg = document.getElementById('hangman');
+                let svgContent = `
+                    <line x1="20" y1="230" x2="180" y2="230" stroke="#8B4513" stroke-width="4" />
+                    <line x1="50" y1="230" x2="50" y2="20" stroke="#8B4513" stroke-width="4" />
+                    <line x1="50" y1="20" x2="130" y2="20" stroke="#8B4513" stroke-width="4" />
+                    <line x1="130" y1="20" x2="130" y2="50" stroke="#8B4513" stroke-width="4" />
+                `;
+                
+                if (wrongGuessesForDisplay >= 1) svgContent += '<circle cx="130" cy="70" r="20" stroke="#000" stroke-width="3" fill="none" />';
+                if (wrongGuessesForDisplay >= 2) svgContent += '<line x1="130" y1="90" x2="130" y2="150" stroke="#000" stroke-width="3" />';
+                if (wrongGuessesForDisplay >= 3) svgContent += '<line x1="130" y1="110" x2="100" y2="130" stroke="#000" stroke-width="3" />';
+                if (wrongGuessesForDisplay >= 4) svgContent += '<line x1="130" y1="110" x2="160" y2="130" stroke="#000" stroke-width="3" />';
+                if (wrongGuessesForDisplay >= 5) svgContent += '<line x1="130" y1="150" x2="110" y2="190" stroke="#000" stroke-width="3" />';
+                if (wrongGuessesForDisplay >= 6) svgContent += '<line x1="130" y1="150" x2="150" y2="190" stroke="#000" stroke-width="3" />';
+                
+                svg.innerHTML = svgContent;
+            },
+
+            render() {
+                const levelInfo = this.getLevelRequirements(this.currentLevel);
+                const maxLives = levelInfo.lives;
+
+                document.getElementById('currentLevel').textContent = this.currentLevel;
+                document.getElementById('levelName').textContent = levelInfo.name.toUpperCase();
+                document.getElementById('scoreValue').textContent = this.score;
+                document.getElementById('gamesValue').textContent = this.gamesPlayed;
+                document.getElementById('livesValue').textContent = maxLives;
+                document.getElementById('categoryValue').textContent = this.category;
+
+                const nextLevelScore = this.getNextLevelScore();
+                if (nextLevelScore) {
+                    const currentLevelScore = this.getLevelRequirements(this.currentLevel).scoreNeeded;
+                    const progress = ((this.score - currentLevelScore) / (nextLevelScore - currentLevelScore)) * 100;
+                    document.getElementById('progressBar').style.width = Math.max(0, Math.min(100, progress)) + '%';
+                    document.getElementById('scoreDisplay').textContent = this.score + ' / ' + nextLevelScore;
+                } else {
+                    document.getElementById('progressBar').style.width = '100%';
+                    document.getElementById('scoreDisplay').textContent = 'MAX LEVEL';
+                }
+
+                this.drawHangman();
+
+                document.getElementById('wrongGuessCount').textContent = this.wrongGuesses;
+                document.getElementById('maxLives').textContent = maxLives;
+
+                const livesIndicator = document.getElementById('livesIndicator');
+                let livesHtml = '';
+                for (let i = 0; i < maxLives; i++) {
+                    livesHtml += '<div class="life-dot" style="background-color: ' + (i < this.wrongGuesses ? '#ef4444' : '#22c55e') + '"></div>';
+                }
+                livesIndicator.innerHTML = livesHtml;
+
+                document.getElementById('wordDisplay').textContent = this.getDisplayWord();
+
+                const hintButton = document.getElementById('hintButton');
+                const hintDisplay = document.getElementById('hintDisplay');
+                const revealButton = document.getElementById('revealButton');
+
+                if (!this.hintRevealed && this.gameStatus === 'playing') {
+                    hintButton.style.display = 'block';
+                    hintDisplay.style.display = 'none';
+                } else if (this.hintRevealed) {
+                    hintButton.style.display = 'none';
+                    hintDisplay.style.display = 'block';
+                    document.getElementById('hintText').textContent = this.hint;
+                } else {
+                    hintButton.style.display = 'none';
+                    hintDisplay.style.display = 'none';
+                }
+
+                revealButton.style.display = this.gameStatus === 'playing' ? 'block' : 'none';
+
+                this.renderKeyboard();
+
+                const gameStatusDiv = document.getElementById('gameStatus');
+                if (this.gameStatus !== 'playing') {
+                    gameStatusDiv.classList.add('show');
+                    gameStatusDiv.classList.remove('won', 'lost');
+                    gameStatusDiv.classList.add(this.gameStatus);
+                    
+                    const statusTitle = document.getElementById('statusTitle');
+                    statusTitle.textContent = this.gameStatus === 'won' ? 'LEVEL COMPLETE! 🎉' : 'LEVEL FAILED! 💀';
+                    statusTitle.classList.remove('won', 'lost');
+                    statusTitle.classList.add(this.gameStatus);
+
+                    document.getElementById('revealedWord').textContent = this.word;
+                    
+                    if (this.gameStatus === 'won') {
+                        const bonusPoints = (maxLives - this.wrongGuesses) * 10;
+                        const hintPenalty = this.hintsUsed * 5;
+                        const levelBonus = this.currentLevel * 20;
+                        const finalScore = Math.max(0, 100 + bonusPoints + levelBonus - hintPenalty);
+                        document.getElementById('pointsInfo').textContent = '+' + finalScore + ' points!';
+                        document.getElementById('nextButton').textContent = '➡️ Next Challenge';
+                    } else {
+                        document.getElementById('pointsInfo').textContent = '';
+                        document.getElementById('nextButton').textContent = '🔄 Try Again';
+                    }
+                    
+                    document.getElementById('statusHint').textContent = this.hint;
+                } else {
+                    gameStatusDiv.classList.remove('show');
+                }
+            },
+
+            renderKeyboard() {
+                const keyboard = document.getElementById('keyboard');
+                const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+                
+                let html = '';
+                for (let i = 0; i < alphabet.length; i++) {
+                    const letter = alphabet[i];
+                    const isGuessed = this.guessedLetters.has(letter);
+                    const isCorrect = isGuessed && this.word.includes(letter);
+                    const isWrong = isGuessed && !this.word.includes(letter);
+                    
+                    let className = 'key-button';
+                    if (isCorrect) className += ' correct';
+                    else if (isWrong) className += ' wrong';
+                    else if (!isGuessed && this.gameStatus === 'playing') className += ' available';
+                    
+                    const disabled = isGuessed || this.gameStatus !== 'playing' ? 'disabled' : '';
+                    html += '<button class="' + className + '" onclick="game.handleLetterClick(\'' + letter + '\')" ' + disabled + '>' + letter + '</button>';
+                }
+                keyboard.innerHTML = html;
+            }
+        };
+
+        game.startNewGame();
+    </script>
+</body>
+</html>
